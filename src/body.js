@@ -5,7 +5,7 @@
  * Body interface provides common methods for Request and Response
  */
 
-import { ReadableStream, TransformStream} from "@mattiasbuelens/web-streams-polyfill/ponyfill/es6";
+import { ReadableStream, TransformStream} from "web-streams-polyfill/ponyfill/es6";
 
 import Blob, { BUFFER } from './blob.js';
 import FetchError from './fetch-error.js';
@@ -566,7 +566,7 @@ export function extractContentType(instance) {
 		case "Blob":
 			return body.type || null;
 		case "FormData":
-			return `multipart/form-data;boundary=${body.getBoundary()}`;
+			return `multipart/form-data;boundary=${body.boundary}`;
 		default:
 			return null;
 	}
@@ -613,7 +613,7 @@ export function getTotalBytes(instance) {
 }
 
 /**
- * Write a Body to a Node.j (e.g. http.Request) object.
+ * Write a Body to a Node.js (e.g. http.Request) object.
  *
  * @param   Body    instance   Instance of Body
  * @return  Void
@@ -676,7 +676,7 @@ export function writeToStream(dest, instance) {
 			dest.end();
 			break;
 		case "FormData":
-			body.pipe(dest);
+			body.stream.pipe(dest);
 			break;
 		default:
 			dest.write(String(body));

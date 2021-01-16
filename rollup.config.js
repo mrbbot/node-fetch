@@ -1,5 +1,5 @@
 import isBuiltin from 'is-builtin-module';
-import babel from 'rollup-plugin-babel';
+import babel from '@rollup/plugin-babel';
 import tweakDefault from './build/rollup-plugin';
 
 process.env.BABEL_ENV = 'rollup';
@@ -13,7 +13,7 @@ export default {
   ],
   plugins: [
     babel({
-      runtimeHelpers: true
+      babelHelpers: "runtime"
     }),
     tweakDefault()
   ],

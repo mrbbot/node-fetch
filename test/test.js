@@ -3,19 +3,15 @@ import chai from "chai";
 import chaiPromised from "chai-as-promised";
 import chaiIterator from "chai-iterator";
 import chaiString from "chai-string";
-import resumer from "resumer";
-import FormData from "form-data";
-import stringToArrayBuffer from "string-to-arraybuffer";
-import URLSearchParams_Polyfill from "url-search-params";
-import { ReadableStream } from "@mattiasbuelens/web-streams-polyfill/ponyfill/es6";
-import { URL } from "whatwg-url";
+import FormData from "formdata-node";
+import { ReadableStream } from "web-streams-polyfill/ponyfill/es6";
 
 const { spawn } = require("child_process");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const stream = require("stream");
-const { parse: parseURL, URLSearchParams } = require("url");
+const { parse: parseURL, URL, URLSearchParams } = require("url");
+const { TextEncoder, TextDecoder } = require("util");
 const { lookup } = require("dns");
 const vm = require("vm");
 
@@ -52,6 +48,19 @@ const supportToString =
 
 const local = new TestServer();
 const base = `http://${local.hostname}:${local.port}/`;
+
+function stringToArrayBuffer(s) {
+  return new TextEncoder().encode(s).buffer;
+}
+
+function stringToReadableStream(s) {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(s);
+      controller.close();
+    },
+  });
+}
 
 before(done => {
   local.start(done);
@@ -380,9 +389,7 @@ describe("node-fetch", () => {
     const url = `${base}redirect/307`;
     const opts = {
       method: "PATCH",
-      body: resumer()
-        .queue("a=1")
-        .end()
+      body: stringToReadableStream("a=1")
     };
     return expect(fetch(url, opts))
       .to.eventually.be.rejected.and.be.an.instanceOf(FetchError)
@@ -490,18 +497,11 @@ describe("node-fetch", () => {
     });
   });
 
-  it("should ignore invalid headers", function() {
+  it("should reject invalid headers", function() {
     const url = `${base}invalid-header`;
-    return fetch(url).then(res => {
-      expect(res.headers.get("Invalid-Header")).to.be.null;
-      expect(res.headers.get("Invalid-Header-Value")).to.be.null;
-      expect(res.headers.get("Set-Cookie")).to.be.null;
-      expect(Array.from(res.headers.keys()).length).to.equal(4);
-      expect(res.headers.has("Connection")).to.be.true;
-      expect(res.headers.has("Content-Type")).to.be.true;
-      expect(res.headers.has("Date")).to.be.true;
-      expect(res.headers.has("Transfer-Encoding")).to.be.true;
-    });
+    return expect(fetch(url))
+      .to.eventually.be.rejected.and.be.an.instanceOf(FetchError)
+      .and.have.property("type", "system");
   });
 
   it("should handle client-error response", function() {
@@ -1059,10 +1059,7 @@ describe("node-fetch", () => {
   });
 
   it("should allow POST request with readable stream as body", function() {
-    let body = resumer()
-      .queue("a=1")
-      .end();
-    body = body.pipe(new stream.PassThrough());
+    let body = stringToReadableStream("a=1");
 
     const url = `${base}inspect`;
     const opts = {
@@ -1098,7 +1095,6 @@ describe("node-fetch", () => {
       .then(res => {
         expect(res.method).to.equal("POST");
         expect(res.headers["content-type"]).to.match(/^multipart\/form-data;\s?boundary\=/);
-        expect(res.headers["content-length"]).to.be.a("string");
         expect(res.body).to.equal("a=1");
       });
   });
@@ -1132,8 +1128,10 @@ describe("node-fetch", () => {
     const form = new FormData();
     form.append("a", "1");
 
-    const headers = form.getHeaders();
-    headers["b"] = "2";
+    const headers = {
+      b: "2",
+      ...form.headers
+    };
 
     const url = `${base}multipart`;
     const opts = {
@@ -1148,7 +1146,6 @@ describe("node-fetch", () => {
       .then(res => {
         expect(res.method).to.equal("POST");
         expect(res.headers["content-type"]).to.match(/^multipart\/form-data;\s?boundary\=/);
-        expect(res.headers["content-length"]).to.be.a("string");
         expect(res.headers.b).to.equal("2");
         expect(res.body).to.equal("a=1");
       });
@@ -1202,32 +1199,6 @@ describe("node-fetch", () => {
   itUSP("should still recognize URLSearchParams when extended", function() {
     class CustomSearchParams extends URLSearchParams {}
     const params = new CustomSearchParams();
-    params.append("a", "1");
-
-    const url = `${base}inspect`;
-    const opts = {
-      method: "POST",
-      body: params
-    };
-    return fetch(url, opts)
-      .then(res => {
-        return res.json();
-      })
-      .then(res => {
-        expect(res.method).to.equal("POST");
-        expect(res.headers["content-type"]).to.equal(
-          "application/x-www-form-urlencoded;charset=UTF-8"
-        );
-        expect(res.headers["content-length"]).to.equal("3");
-        expect(res.body).to.equal("a=1");
-      });
-  });
-
-  /* for 100% code coverage, checks for duck-typing-only detection
-	 * where both constructor.name and brand tests fail */
-  it("should still recognize URLSearchParams when extended from polyfill", function() {
-    class CustomPolyfilledSearchParams extends URLSearchParams_Polyfill {}
-    const params = new CustomPolyfilledSearchParams();
     params.append("a", "1");
 
     const url = `${base}inspect`;
@@ -1453,7 +1424,7 @@ describe("node-fetch", () => {
         if (chunk === null) {
           return;
         }
-        expect(chunk.toString()).to.equal("world");
+        expect(new TextDecoder().decode(chunk)).to.equal("world");
       });
     });
   });
@@ -1468,7 +1439,7 @@ describe("node-fetch", () => {
         if (chunk === null) {
           return;
         }
-        expect(chunk.toString()).to.equal("world");
+        expect(new TextDecoder().decode(chunk)).to.equal("world");
       };
 
       return Promise.all([
@@ -1700,10 +1671,7 @@ describe("node-fetch", () => {
     });
 
     it("should reject if attempt to accumulate body stream throws", function() {
-      let body = resumer()
-        .queue("a=1")
-        .end();
-      body = body.pipe(new stream.PassThrough());
+      let body = stringToReadableStream("a=1");
 
       const res = new Response(body);
 
@@ -1981,10 +1949,7 @@ describe("Response", function() {
   });
 
   it("should support empty options", function() {
-    let body = resumer()
-      .queue("a=1")
-      .end();
-    body = body.pipe(new stream.PassThrough());
+    let body = stringToReadableStream("a=1");
     const res = new Response(body);
     return res.text().then(result => {
       expect(result).to.equal("a=1");
@@ -2036,10 +2001,7 @@ describe("Response", function() {
   });
 
   it("should support clone() method", function() {
-    let body = resumer()
-      .queue("a=1")
-      .end();
-    body = body.pipe(new stream.PassThrough());
+    let body = stringToReadableStream("a=1");
     const res = new Response(body, {
       headers: {
         a: "1"
@@ -2063,10 +2025,7 @@ describe("Response", function() {
   });
 
   it("should support stream as body", function() {
-    let body = resumer()
-      .queue("a=1")
-      .end();
-    body = body.pipe(new stream.PassThrough());
+    let body = stringToReadableStream("a=1");
     const res = new Response(body);
     return res.text().then(result => {
       expect(result).to.equal("a=1");
@@ -2197,10 +2156,7 @@ describe("Request", function() {
     it("should clone a Stream", function(){
       const url = `${base}hello`;
 
-      let body = resumer()
-        .queue("a=1")
-        .end();
-      body = body.pipe(new stream.PassThrough());
+      let body = stringToReadableStream("a=1");
 
       const r1 = new Request(url, {
         method: "POST",
@@ -2346,10 +2302,7 @@ describe("Request", function() {
 
   it("should support clone() method", function() {
     const url = base;
-    let body = resumer()
-      .queue("a=1")
-      .end();
-    body = body.pipe(new stream.PassThrough());
+    let body = stringToReadableStream("a=1");
     const agent = new http.Agent();
     const req = new Request(url, {
       body,
