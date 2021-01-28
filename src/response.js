@@ -19,6 +19,13 @@ const INTERNALS = Symbol('Response internals');
  * @return  Void
  */
 export default class Response {
+	static redirect(url, status = 302) {
+		return new Response(null, {
+			status,
+			headers: { Location: url }
+		});
+	}
+
 	constructor(body = null, opts = {}) {
 		if (!opts.name) {
 			opts.name = "Response";
