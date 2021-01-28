@@ -4,11 +4,13 @@
   "private": false,
   "description": "A light-weight module that brings the Fetch API to node.js; Forked from https://npm.im/node-fetch",
   "main": "lib/index",
+  "types": "index.d.ts",
   "module": "lib/index.mjs",
   "files": [
     "lib/index.js",
     "lib/index.mjs",
-    "lib/index.es.js"
+    "lib/index.es.js",
+    "index.d.ts"
   ],
   "engines": {
     "node": ">=10.0.0"
@@ -41,6 +43,7 @@
     "@babel/preset-env": "^7.12.11",
     "@babel/register": "^7.12.10",
     "@rollup/plugin-babel": "^5.2.2",
+    "@types/node": "^14.14.21",
     "babel-plugin-istanbul": "^6.0.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
