@@ -141,6 +141,34 @@ export type RequestCache =
     | "only-if-cached"
     | "reload";
 
+export interface WebSocketMessageEvent {
+    type: "message";
+    data: string;
+}
+
+export interface WebSocketCloseEvent {
+    type: "close";
+    code?: number;
+    reason?: string;
+}
+
+export interface WebSocketErrorEvent {
+    type: "error";
+    error: any;
+}
+
+export interface WebSocket {
+    accept(): void;
+    addEventListener(type: "message", listener: (event: WebSocketMessageEvent) => void): void;
+    addEventListener(type: "close", listener: (event: WebSocketCloseEvent) => void): void;
+    addEventListener(type: "error", listener: (event: WebSocketErrorEvent) => void): void;
+    dispatchEvent(type: "message", event: WebSocketMessageEvent): void;
+    dispatchEvent(type: "close", event: WebSocketCloseEvent): void;
+    dispatchEvent(type: "error", event: WebSocketErrorEvent): void;
+    send(message: string): void;
+    close(code?: number, reason?: string): void;
+}
+
 export class Headers implements Iterable<[string, string]> {
     constructor(init?: HeadersInit);
     forEach(callback: (value: string, name: string) => void): void;
@@ -214,6 +242,7 @@ export class Response extends Body {
     statusText: string;
     type: ResponseType;
     url: string;
+    webSocket?: WebSocket;
 }
 
 export type ResponseType =
@@ -231,6 +260,7 @@ export interface ResponseInit {
     statusText?: string;
     timeout?: number;
     url?: string;
+    webSocket?: WebSocket;
 }
 
 interface URLLike {

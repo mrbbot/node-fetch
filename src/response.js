@@ -39,7 +39,8 @@ export default class Response {
 			url: opts.url,
 			status,
 			statusText: opts.statusText || STATUS_CODES[status],
-			headers: new Headers(opts.headers)
+			headers: new Headers(opts.headers),
+			webSocket: opts.webSocket,
 		};
 	}
 
@@ -64,6 +65,10 @@ export default class Response {
 
 	get headers() {
 		return this[INTERNALS].headers;
+	}
+
+	get webSocket() {
+		return this[INTERNALS].webSocket;
 	}
 
 	/**
