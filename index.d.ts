@@ -75,6 +75,7 @@ export class Request extends Body {
     protocol: string;
     size: number;
     timeout: number;
+    cf: any;
 }
 
 export interface RequestInit {
@@ -91,6 +92,7 @@ export interface RequestInit {
     follow?: number; // =20 maximum redirect count. 0 to not follow redirect
     size?: number; // =0 maximum response body size in bytes. 0 to disable
     timeout?: number; // =0 req/res timeout in ms, it resets on redirect. 0 to disable (OS limit applies)
+    cf?: any;
 
     // node-fetch does not support mode, cache or credentials options
 }

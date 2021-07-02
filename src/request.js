@@ -87,7 +87,8 @@ export default class Request {
 			method,
 			redirect: init.redirect || input.redirect || 'follow',
 			headers,
-			parsedURL
+			parsedURL,
+			cf: init.cf || input.cf || {}
 		};
 
 		// node-fetch-only options
@@ -115,6 +116,10 @@ export default class Request {
 
 	get redirect() {
 		return this[INTERNALS].redirect;
+	}
+
+	get cf() {
+		return this[INTERNALS].cf;
 	}
 
 	/**

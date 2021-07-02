@@ -83,7 +83,8 @@ export default class Response {
 			statusText: this.statusText,
 			headers: this.headers,
 			ok: this.ok,
-			name: `cloned(${getInstanceName(this)})`
+			name: `cloned(${getInstanceName(this)})`,
+			webSocket: this.webSocket
 		});
 	}
 }
