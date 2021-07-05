@@ -102,7 +102,8 @@ export function createReadableStream(instance) {
 				// TODO: Should we only do Buffer.from() if chunk is a UInt8Array?
 				// Potentially it makes more sense for down-stream consumers of fetch to cast to Buffer, instead?
 				// if(isUInt8Array(chunk)) {
-				controller.enqueue(new Uint8Array(Buffer.from(chunk)));
+				const array = new Uint8Array(Buffer.from(chunk));
+				if(array.length > 0) controller.enqueue(array);
 			}
 		}));
 	}
@@ -114,48 +115,43 @@ export function createReadableStream(instance) {
 
 	const readable = new ReadableStream({
 		start(controller) {
+			let array = undefined;
 			switch (bodyType) {
 				case "String":
 					// body is a string:
-					controller.enqueue(new Uint8Array(Buffer.from(body)));
-					controller.close();
+					array = new Uint8Array(Buffer.from(body));
 					break;
 				case "URLSearchParams":
 					// body is a URLSearchParams
-					controller.enqueue(new Uint8Array(Buffer.from(body.toString())));
-					controller.close();
+					array = new Uint8Array(Buffer.from(body.toString()));
 					break;
 				case "Blob":
 					// body is blob
-					controller.enqueue(new Uint8Array(Buffer.from(body[BUFFER])));
-					controller.close();
+					array = new Uint8Array(Buffer.from(body[BUFFER]));
 					break;
 				case "Buffer":
 					// body is Buffer
-					controller.enqueue(new Uint8Array(Buffer.from(body)));
-					controller.close();
+					array = new Uint8Array(Buffer.from(body));
 					break;
 				case "ArrayBuffer":
 					// body is ArrayBuffer
-					controller.enqueue(new Uint8Array(Buffer.from(body)));
-					controller.close();
+					array = new Uint8Array(Buffer.from(body));
 					break;
 				case "ArrayBufferView":
 					// body is ArrayBufferView
-					controller.enqueue(new Uint8Array(Buffer.from(body.buffer)));
-					controller.close();
+					array = new Uint8Array(Buffer.from(body.buffer));
 					break;
 				case "FormData":
-					controller.enqueue(new Uint8Array(Buffer.from(body.toString())));
-					controller.close();
+					array = new Uint8Array(Buffer.from(body.toString()));
 					break;
 				case "other":
-					controller.enqueue(new Uint8Array(Buffer.from(String(body))));
-					controller.close();
+					array = new Uint8Array(Buffer.from(String(body)));
 					break;
 				default:
 					throw new Error("createReadableStream received an instance body that getTypeOfBody could not understand");
 			}
+			if(array && array.length > 0) controller.enqueue(array);
+			controller.close();
 		},
 		type: "bytes"
 	});

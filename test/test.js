@@ -2081,6 +2081,13 @@ describe("Response", function() {
     return res.text().then(result => expect(result).to.equal(""));
   });
 
+  it("should support empty body", function() {
+    const res = new Response("");
+    return res.text().then(result => {
+      expect(result).to.equal("");
+    });
+  });
+
   it("should default to 200 as status code", function() {
     const res = new Response(null);
     expect(res.status).to.equal(200);
@@ -2201,6 +2208,13 @@ describe("Request", function() {
     const req = new Request(".");
     expect(req.body).to.equal(null);
     return req.text().then(result => expect(result).to.equal(""));
+  });
+
+  it("should support empty body", function() {
+    const req = new Request(".", { method: "POST", body: "" });
+    return req.text().then(result => {
+      expect(result).to.equal("");
+    });
   });
 
   it("should support parsing headers", function() {
