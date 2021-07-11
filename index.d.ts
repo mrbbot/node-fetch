@@ -32,6 +32,7 @@ import FormData from "formdata-node";
 import { Agent, IncomingHttpHeaders } from "http";
 import { URLSearchParams, URL } from "url";
 import { ReadableStream } from "web-streams-polyfill";
+import type { IncomingRequestCfProperties } from './cf';
 
 // `AbortSignal` is defined here to prevent a dependency on a particular
 // implementation like the `abort-controller` package, and to avoid requiring
@@ -75,7 +76,7 @@ export class Request extends Body {
     protocol: string;
     size: number;
     timeout: number;
-    cf: any;
+    cf?: IncomingRequestCfProperties;
 }
 
 export interface RequestInit {
@@ -92,7 +93,7 @@ export interface RequestInit {
     follow?: number; // =20 maximum redirect count. 0 to not follow redirect
     size?: number; // =0 maximum response body size in bytes. 0 to disable
     timeout?: number; // =0 req/res timeout in ms, it resets on redirect. 0 to disable (OS limit applies)
-    cf?: any;
+    cf?: IncomingRequestCfProperties;
 
     // node-fetch does not support mode, cache or credentials options
 }
